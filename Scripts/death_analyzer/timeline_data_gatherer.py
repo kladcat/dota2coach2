@@ -70,15 +70,25 @@ class DeathSurvivalDataGatherer:
                 continue
             bucket = raw_buckets[t]
 
-            if e['type'] == "DOTA_COMBATLOG_MODIFIER_ADD" and e.get("targetname", "").lower().replace("_", "") in self.hero_name_variants:
-                if detect_incapacitated(e):
-                    active_incapacitations[e.get("inflictor", "")] = t
+#            if e['type'] == "DOTA_COMBATLOG_MODIFIER_ADD" and e.get("targetname", "").lower().replace("_", "") in self.hero_name_variants:
+#                if detect_incapacitated(e):
+#                    active_incapacitations[e.get("inflictor", "")] = t
 
-            if e['type'] == "DOTA_COMBATLOG_MODIFIER_REMOVE" and e.get("targetname", "").lower().replace("_", "") in self.hero_name_variants:
-                inflictor = e.get("inflictor", "")
-                if inflictor in active_incapacitations:
-                    start = active_incapacitations.pop(inflictor)
-                    incapacitation_periods.append((start, t))
+#            if e['type'] == "DOTA_COMBATLOG_MODIFIER_REMOVE" and e.get("targetname", "").lower().replace("_", "") in self.hero_name_variants:
+#                inflictor = e.get("inflictor", "")
+#                if inflictor in active_incapacitations:
+#                    start = active_incapacitations.pop(inflictor)
+#                    incapacitation_periods.append((start, t))
+
+            # Track incapacitation purely via stun_duration
+            if e['type'] == "DOTA_COMBATLOG_MODIFIER_ADD" and e.get("targetname", "").lower().replace("_", "") in self.hero_name_variants:
+                stun_duration = e.get("stun_duration")
+                if isinstance(stun_duration, (int, float)) and stun_duration > 0:
+                    start_time = t
+                    end_time = t + int(stun_duration)
+                    print(f"🛑 Incapacitation detected via '{e.get('inflictor', 'unknown')}' from t={t} to t={end_time} (duration: {stun_duration}s)")
+
+                    incapacitation_periods.append((start_time, end_time))
 
             if e['type'] == "interval":
                 self._process_interval(e, bucket)
@@ -87,6 +97,7 @@ class DeathSurvivalDataGatherer:
             elif e['type'] == "DOTA_COMBATLOG_DEATH":
                 self._process_death(e, bucket)
 
+        print(f"🧠 Total incapacitation periods for {self.hero_name}: {len(incapacitation_periods)}")
         incapacitated_ticks = set(tick for start, end in incapacitation_periods for tick in range(start, end + 1))
 
         output = {}
@@ -174,6 +185,9 @@ class DeathSurvivalDataGatherer:
 
         t_pos, t_dmg, t_die, t_lvl, t_hp = gather_units(self.teammate_ids)
         e_pos, e_dmg, e_die, e_lvl, e_hp = gather_units(self.enemy_ids)
+
+        print(f"⏱️ t={t}: player_incapacitated={float(t) in incapacitated_ticks}")
+
 
         return {
             "player_pos": [0.0, 0.0],

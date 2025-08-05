@@ -130,6 +130,8 @@ def extract_features(timeline, ref_time, hero_name, hero_unit):
             if data and "pos" in data and distance(v["player_pos"], data["pos"]) <= NEARBY_RADIUS:
                 enemies_data.append(data)
 
+    
+
         output[str(float(t))] = {
                     "player_pos": [0.0, 0.0],
                     "teammates_pos": [normalize(d["pos"], v["player_pos"]) for d in teammates_data],
@@ -146,7 +148,7 @@ def extract_features(timeline, ref_time, hero_name, hero_unit):
                     "enemies_died": [d.get("died", False) for d in enemies_data],
                     "teammates_hp_pct": [d.get("hp_pct", 1.0) for d in teammates_data],
                     "enemies_hp_pct": [d.get("hp_pct", 1.0) for d in enemies_data],
-                    "player_incapacitated": False
+                    "player_incapacitated": v.get("player_incapacitated", False)
                 }
         #output[str(float(t))] = {
         #    "player_pos": [0.0, 0.0],
