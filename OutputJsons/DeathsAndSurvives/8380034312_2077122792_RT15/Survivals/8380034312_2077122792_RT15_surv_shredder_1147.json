@@ -41,21 +41,6 @@
       ]
     ],
     "player_damage_taken": 0,
-    "player_died": false,
-    "player_level": 11,
-    "player_hp_pct": 0.888,
-    "teammates_levels": [
-      12,
-      11,
-      12,
-      13
-    ],
-    "enemies_levels": [
-      10,
-      10,
-      9,
-      10
-    ],
     "teammates_damage_taken": [
       0,
       0,
@@ -64,10 +49,11 @@
     ],
     "enemies_damage_taken": [
       0,
-      28,
+      0,
       0,
       0
     ],
+    "player_died": false,
     "teammates_died": [
       false,
       false,
@@ -80,6 +66,20 @@
       false,
       false
     ],
+    "player_level": 11,
+    "teammates_levels": [
+      12,
+      11,
+      12,
+      13
+    ],
+    "enemies_levels": [
+      10,
+      10,
+      9,
+      10
+    ],
+    "player_hp_pct": 0.888,
     "teammates_hp_pct": [
       0.0,
       0.783,
@@ -91,7 +91,9 @@
       0.507,
       0.0,
       0.451
-    ]
+    ],
+    "player_incapacitated": false,
+    "damage_events": []
   },
   "1138.0": {
     "player_pos": [
@@ -135,21 +137,6 @@
       ]
     ],
     "player_damage_taken": 216,
-    "player_died": false,
-    "player_level": 11,
-    "player_hp_pct": 0.897,
-    "teammates_levels": [
-      12,
-      11,
-      12,
-      13
-    ],
-    "enemies_levels": [
-      10,
-      10,
-      9,
-      10
-    ],
     "teammates_damage_taken": [
       0,
       0,
@@ -158,10 +145,11 @@
     ],
     "enemies_damage_taken": [
       0,
-      127,
+      0,
       0,
       0
     ],
+    "player_died": false,
     "teammates_died": [
       false,
       false,
@@ -174,6 +162,20 @@
       false,
       false
     ],
+    "player_level": 11,
+    "teammates_levels": [
+      12,
+      11,
+      12,
+      13
+    ],
+    "enemies_levels": [
+      10,
+      10,
+      9,
+      10
+    ],
+    "player_hp_pct": 0.897,
     "teammates_hp_pct": [
       0.0,
       0.792,
@@ -185,7 +187,9 @@
       0.491,
       0.0,
       0.472
-    ]
+    ],
+    "player_incapacitated": true,
+    "damage_events": []
   },
   "1139.0": {
     "player_pos": [
@@ -233,22 +237,6 @@
       ]
     ],
     "player_damage_taken": 52,
-    "player_died": false,
-    "player_level": 11,
-    "player_hp_pct": 0.791,
-    "teammates_levels": [
-      12,
-      11,
-      12,
-      13
-    ],
-    "enemies_levels": [
-      10,
-      10,
-      9,
-      12,
-      10
-    ],
     "teammates_damage_taken": [
       0,
       0,
@@ -257,11 +245,12 @@
     ],
     "enemies_damage_taken": [
       0,
-      89,
+      0,
       0,
       0,
       0
     ],
+    "player_died": false,
     "teammates_died": [
       false,
       false,
@@ -275,6 +264,21 @@
       false,
       false
     ],
+    "player_level": 11,
+    "teammates_levels": [
+      12,
+      11,
+      12,
+      13
+    ],
+    "enemies_levels": [
+      10,
+      10,
+      9,
+      12,
+      10
+    ],
+    "player_hp_pct": 0.791,
     "teammates_hp_pct": [
       0.0,
       0.8,
@@ -287,7 +291,9 @@
       0.0,
       0.82,
       0.491
-    ]
+    ],
+    "player_incapacitated": true,
+    "damage_events": []
   },
   "1140.0": {
     "player_pos": [
@@ -335,9 +341,34 @@
       ]
     ],
     "player_damage_taken": 441,
+    "teammates_damage_taken": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "enemies_damage_taken": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
     "player_died": false,
+    "teammates_died": [
+      false,
+      false,
+      false,
+      false
+    ],
+    "enemies_died": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ],
     "player_level": 11,
-    "player_hp_pct": 0.774,
     "teammates_levels": [
       12,
       11,
@@ -351,32 +382,7 @@
       12,
       10
     ],
-    "teammates_damage_taken": [
-      0,
-      19,
-      0,
-      0
-    ],
-    "enemies_damage_taken": [
-      0,
-      442,
-      0,
-      0,
-      0
-    ],
-    "teammates_died": [
-      false,
-      false,
-      false,
-      false
-    ],
-    "enemies_died": [
-      false,
-      true,
-      false,
-      false,
-      false
-    ],
+    "player_hp_pct": 0.774,
     "teammates_hp_pct": [
       0.0,
       0.809,
@@ -389,7 +395,9 @@
       0.0,
       0.831,
       0.511
-    ]
+    ],
+    "player_incapacitated": true,
+    "damage_events": []
   },
   "1141.0": {
     "player_pos": [
@@ -437,22 +445,6 @@
       ]
     ],
     "player_damage_taken": 160,
-    "player_died": false,
-    "player_level": 12,
-    "player_hp_pct": 0.548,
-    "teammates_levels": [
-      12,
-      11,
-      13,
-      13
-    ],
-    "enemies_levels": [
-      10,
-      10,
-      9,
-      12,
-      10
-    ],
     "teammates_damage_taken": [
       0,
       0,
@@ -466,6 +458,7 @@
       0,
       0
     ],
+    "player_died": false,
     "teammates_died": [
       false,
       false,
@@ -479,6 +472,21 @@
       false,
       false
     ],
+    "player_level": 12,
+    "teammates_levels": [
+      12,
+      11,
+      13,
+      13
+    ],
+    "enemies_levels": [
+      10,
+      10,
+      9,
+      12,
+      10
+    ],
+    "player_hp_pct": 0.548,
     "teammates_hp_pct": [
       0.0,
       0.804,
@@ -491,7 +499,9 @@
       0.0,
       0.842,
       0.531
-    ]
+    ],
+    "player_incapacitated": false,
+    "damage_events": []
   },
   "1142.0": {
     "player_pos": [
@@ -539,25 +549,9 @@
       ]
     ],
     "player_damage_taken": 222,
-    "player_died": false,
-    "player_level": 12,
-    "player_hp_pct": 0.478,
-    "teammates_levels": [
-      12,
-      11,
-      13,
-      13
-    ],
-    "enemies_levels": [
-      10,
-      10,
-      9,
-      12,
-      10
-    ],
     "teammates_damage_taken": [
       0,
-      50,
+      0,
       0,
       0
     ],
@@ -568,6 +562,7 @@
       0,
       0
     ],
+    "player_died": false,
     "teammates_died": [
       false,
       false,
@@ -581,6 +576,21 @@
       false,
       false
     ],
+    "player_level": 12,
+    "teammates_levels": [
+      12,
+      11,
+      13,
+      13
+    ],
+    "enemies_levels": [
+      10,
+      10,
+      9,
+      12,
+      10
+    ],
+    "player_hp_pct": 0.478,
     "teammates_hp_pct": [
       0.0,
       0.813,
@@ -593,7 +603,9 @@
       0.0,
       0.854,
       0.551
-    ]
+    ],
+    "player_incapacitated": false,
+    "damage_events": []
   },
   "1143.0": {
     "player_pos": [
@@ -641,25 +653,9 @@
       ]
     ],
     "player_damage_taken": 180,
-    "player_died": false,
-    "player_level": 12,
-    "player_hp_pct": 0.375,
-    "teammates_levels": [
-      12,
-      11,
-      13,
-      13
-    ],
-    "enemies_levels": [
-      10,
-      10,
-      9,
-      12,
-      10
-    ],
     "teammates_damage_taken": [
       0,
-      294,
+      0,
       0,
       0
     ],
@@ -670,6 +666,7 @@
       0,
       0
     ],
+    "player_died": false,
     "teammates_died": [
       false,
       false,
@@ -683,6 +680,21 @@
       false,
       false
     ],
+    "player_level": 12,
+    "teammates_levels": [
+      12,
+      11,
+      13,
+      13
+    ],
+    "enemies_levels": [
+      10,
+      10,
+      9,
+      12,
+      10
+    ],
+    "player_hp_pct": 0.375,
     "teammates_hp_pct": [
       0.0,
       0.787,
@@ -695,7 +707,9 @@
       0.0,
       0.864,
       0.903
-    ]
+    ],
+    "player_incapacitated": false,
+    "damage_events": []
   },
   "1144.0": {
     "player_pos": [
@@ -743,22 +757,6 @@
       ]
     ],
     "player_damage_taken": 0,
-    "player_died": false,
-    "player_level": 12,
-    "player_hp_pct": 0.294,
-    "teammates_levels": [
-      12,
-      11,
-      13,
-      13
-    ],
-    "enemies_levels": [
-      10,
-      10,
-      9,
-      12,
-      10
-    ],
     "teammates_damage_taken": [
       0,
       0,
@@ -772,6 +770,7 @@
       0,
       0
     ],
+    "player_died": false,
     "teammates_died": [
       false,
       false,
@@ -785,6 +784,21 @@
       false,
       false
     ],
+    "player_level": 12,
+    "teammates_levels": [
+      12,
+      11,
+      13,
+      13
+    ],
+    "enemies_levels": [
+      10,
+      10,
+      9,
+      12,
+      10
+    ],
+    "player_hp_pct": 0.294,
     "teammates_hp_pct": [
       0.0,
       0.594,
@@ -797,7 +811,9 @@
       0.0,
       0.875,
       0.956
-    ]
+    ],
+    "player_incapacitated": false,
+    "damage_events": []
   },
   "1145.0": {
     "player_pos": [
@@ -845,22 +861,6 @@
       ]
     ],
     "player_damage_taken": 149,
-    "player_died": false,
-    "player_level": 12,
-    "player_hp_pct": 0.229,
-    "teammates_levels": [
-      12,
-      11,
-      13,
-      13
-    ],
-    "enemies_levels": [
-      10,
-      10,
-      9,
-      12,
-      10
-    ],
     "teammates_damage_taken": [
       0,
       0,
@@ -874,6 +874,7 @@
       0,
       0
     ],
+    "player_died": false,
     "teammates_died": [
       false,
       false,
@@ -887,6 +888,21 @@
       false,
       false
     ],
+    "player_level": 12,
+    "teammates_levels": [
+      12,
+      11,
+      13,
+      13
+    ],
+    "enemies_levels": [
+      10,
+      10,
+      9,
+      12,
+      10
+    ],
+    "player_hp_pct": 0.229,
     "teammates_hp_pct": [
       0.0,
       0.602,
@@ -899,7 +915,9 @@
       0.0,
       0.886,
       0.975
-    ]
+    ],
+    "player_incapacitated": false,
+    "damage_events": []
   },
   "1146.0": {
     "player_pos": [
@@ -943,21 +961,6 @@
       ]
     ],
     "player_damage_taken": 274,
-    "player_died": false,
-    "player_level": 12,
-    "player_hp_pct": 0.242,
-    "teammates_levels": [
-      11,
-      13,
-      13
-    ],
-    "enemies_levels": [
-      10,
-      10,
-      9,
-      12,
-      10
-    ],
     "teammates_damage_taken": [
       0,
       0,
@@ -970,6 +973,7 @@
       0,
       0
     ],
+    "player_died": false,
     "teammates_died": [
       false,
       false,
@@ -982,6 +986,20 @@
       false,
       false
     ],
+    "player_level": 12,
+    "teammates_levels": [
+      11,
+      13,
+      13
+    ],
+    "enemies_levels": [
+      10,
+      10,
+      9,
+      12,
+      10
+    ],
+    "player_hp_pct": 0.242,
     "teammates_hp_pct": [
       0.611,
       0.536,
@@ -993,7 +1011,9 @@
       0.0,
       0.897,
       0.993
-    ]
+    ],
+    "player_incapacitated": false,
+    "damage_events": []
   },
   "1147.0": {
     "player_pos": [
@@ -1033,20 +1053,6 @@
       ]
     ],
     "player_damage_taken": 0,
-    "player_died": false,
-    "player_level": 12,
-    "player_hp_pct": 0.111,
-    "teammates_levels": [
-      11,
-      13,
-      13
-    ],
-    "enemies_levels": [
-      10,
-      10,
-      12,
-      10
-    ],
     "teammates_damage_taken": [
       0,
       0,
@@ -1058,6 +1064,7 @@
       0,
       0
     ],
+    "player_died": false,
     "teammates_died": [
       false,
       false,
@@ -1069,6 +1076,19 @@
       false,
       false
     ],
+    "player_level": 12,
+    "teammates_levels": [
+      11,
+      13,
+      13
+    ],
+    "enemies_levels": [
+      10,
+      10,
+      12,
+      10
+    ],
+    "player_hp_pct": 0.111,
     "teammates_hp_pct": [
       0.62,
       0.54,
@@ -1079,6 +1099,8 @@
       0.0,
       0.908,
       1.0
-    ]
+    ],
+    "player_incapacitated": false,
+    "damage_events": []
   }
 }

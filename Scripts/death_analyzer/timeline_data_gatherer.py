@@ -14,17 +14,48 @@ class DeathSurvivalDataGatherer:
         self.teammate_ids = []
         self.enemy_ids = []
         self.unit_to_name = {}
+        self.lower_enemy_ids = []
+        self.lower_teammate_ids = []
+
         self._identify_units()
 
+
     def _identify_units(self):
-        hero_ids = set()
+        hero_ids = []
+        self.unit_to_name = {}
+
         for e in self.timeline:
             if e['type'] == "interval" and e['unit'].startswith("CDOTA_Unit_Hero_"):
-                hero_ids.add(e['unit'])
-                self.unit_to_name[e['unit']] = e.get("name", e['unit'].replace("CDOTA_Unit_", "npc_dota_"))
-        hero_ids = sorted(hero_ids)
-        self.enemy_ids = [hid for hid in hero_ids if hid != self.hero_unit][:5]
-        self.teammate_ids = [hid for hid in hero_ids if hid != self.hero_unit and hid not in self.enemy_ids][:4]
+                unit = e['unit']
+                if unit not in hero_ids:
+                    hero_ids.append(unit)
+                    self.unit_to_name[unit] = e.get("name", unit.replace("CDOTA_Unit_", "npc_dota_"))
+                if len(hero_ids) == 10:
+                    break  # Only need the first 10
+
+        # 🧠 Find which batch the player is in
+        if self.hero_unit not in hero_ids:
+            print(f"❗ hero_unit {self.hero_unit} not found in hero_ids:", hero_ids)
+            return
+
+        player_index = hero_ids.index(self.hero_unit)
+
+        if player_index < 5:
+            full_teammates = hero_ids[:5]
+            self.enemy_ids = hero_ids[5:]
+        else:
+            full_teammates = hero_ids[5:]
+            self.enemy_ids = hero_ids[:5]
+
+        self.teammate_ids = [hid for hid in full_teammates if hid != self.hero_unit]
+
+        self.lower_enemy_ids = [hid.lower().replace("_", "") for hid in self.enemy_ids]
+        self.lower_teammate_ids = [hid.lower().replace("_", "") for hid in self.teammate_ids]
+
+        #print("🧠 Player unit:", self.hero_unit)
+        #print("👥 All heroes:", hero_ids)
+        #print("💀 Enemy IDs:", self.lower_enemy_ids)
+        #print("🧑‍🤝‍🧑 Teammate IDs:", self.lower_teammate_ids)
 
     @staticmethod
     def detect_hero_name_from_events(timeline, unit_name):
@@ -39,6 +70,23 @@ class DeathSurvivalDataGatherer:
         fallback = unit_name.replace("CDOTA_Unit_", "npc_dota_").lower()
         print(f"🧪 No ability found for {unit_name}, using fallback: {fallback}")
         return fallback
+
+    def normalize_hero_unit(name: str) -> str:
+        """
+        Converts names like:
+        - npc_dota_hero_skeleton_king → cdota_unit_hero_skeleton_king
+        - CDOTA_Unit_Hero_SkeletonKing → cdota_unit_hero_skeleton_king
+        """
+        name = name.strip().lower()
+
+        if name.startswith("npc_dota_hero_"):
+            return "cdota_unit_hero_" + name[len("npc_dota_hero_"):]
+
+        if name.startswith("cdota_unit_hero_"):
+            return name  # Already normalized
+
+        # Fallback: if it's in the raw form like "SkeletonKing", lower it and add prefix
+        return "cdota_unit_hero_" + name
 
     def extract_features(self, event_time, verbose=False):
 
@@ -86,7 +134,7 @@ class DeathSurvivalDataGatherer:
                 if isinstance(stun_duration, (int, float)) and stun_duration > 0:
                     start_time = t
                     end_time = t + int(stun_duration)
-                    print(f"🛑 Incapacitation detected via '{e.get('inflictor', 'unknown')}' from t={t} to t={end_time} (duration: {stun_duration}s)")
+                    #print(f"🛑 Incapacitation detected via '{e.get('inflictor', 'unknown')}' from t={t} to t={end_time} (duration: {stun_duration}s)")
 
                     incapacitation_periods.append((start_time, end_time))
 
@@ -97,7 +145,7 @@ class DeathSurvivalDataGatherer:
             elif e['type'] == "DOTA_COMBATLOG_DEATH":
                 self._process_death(e, bucket)
 
-        print(f"🧠 Total incapacitation periods for {self.hero_name}: {len(incapacitation_periods)}")
+        #print(f"🧠 Total incapacitation periods for {self.hero_name}: {len(incapacitation_periods)}")
         incapacitated_ticks = set(tick for start, end in incapacitation_periods for tick in range(start, end + 1))
 
         output = {}
@@ -147,19 +195,27 @@ class DeathSurvivalDataGatherer:
         tgt = e.get("targetname", "").lower().replace("_", "")
         if tgt in self.hero_name_variants:
             bucket["player_damage_taken"] += e['value']
-        norm_name = "CDOTA_Unit_" + e['targetname'].replace("npc_dota_", "")
-        if norm_name in self.teammate_ids + self.enemy_ids:
-            group = "teammates" if norm_name in self.teammate_ids else "enemies"
-            bucket[group].setdefault(norm_name, {}).setdefault("damage_taken", 0)
-            bucket[group][norm_name]["damage_taken"] += e['value']
-        if verbose and "creep" not in e.get("attackername", "") and "creep" not in e.get("targetname", ""):
-            bucket["damage_events"].append({
-                "attackername": e.get("attackername"),
-                "sourcename": e.get("sourcename"),
-                "value": e.get("value"),
-                "inflictor": e.get("inflictor"),
-                "targetname": e.get("targetname")
-            })
+        
+        
+        norm_name = ("CDOTA_Unit_" + e['targetname'].replace("npc_dota_", "")).replace("_", "").lower()
+        
+        if "hero" in norm_name:
+            #print(norm_name)
+            #print("💀 Enemy IDs:", self.lower_enemy_ids)
+            #print("🧑‍🤝‍🧑 Teammate IDs:", self.lower_teammate_ids)
+            if norm_name in self.lower_teammate_ids + self.lower_enemy_ids:
+                print("enemy and teammate found: " + norm_name)
+                group = "teammates" if norm_name in self.teammate_ids else "enemies"
+                bucket[group].setdefault(norm_name, {}).setdefault("damage_taken", 0)
+                bucket[group][norm_name]["damage_taken"] += e['value']
+            if verbose and "creep" not in e.get("attackername", "") and "creep" not in e.get("targetname", ""):
+                bucket["damage_events"].append({
+                    "attackername": e.get("attackername"),
+                    "sourcename": e.get("sourcename"),
+                    "value": e.get("value"),
+                    "inflictor": e.get("inflictor"),
+                    "targetname": e.get("targetname")
+                })
 
     def _process_death(self, e, bucket):
         tgt = e.get("targetname", "").lower().replace("_", "")
@@ -186,7 +242,7 @@ class DeathSurvivalDataGatherer:
         t_pos, t_dmg, t_die, t_lvl, t_hp = gather_units(self.teammate_ids)
         e_pos, e_dmg, e_die, e_lvl, e_hp = gather_units(self.enemy_ids)
 
-        print(f"⏱️ t={t}: player_incapacitated={float(t) in incapacitated_ticks}")
+        #print(f"⏱️ t={t}: player_incapacitated={float(t) in incapacitated_ticks}")
 
 
         return {

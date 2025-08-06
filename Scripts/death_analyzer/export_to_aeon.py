@@ -4,6 +4,9 @@ import argparse
 from collections import defaultdict
 from math import hypot
 
+from timeline_data_gatherer import DeathSurvivalDataGatherer  # add this import at the top
+
+
 WINDOW_SECONDS = 10
 OUTPUT_DIR = "../../OutputJsons/DeathsAndSurvives"
 NEARBY_RADIUS = 20
@@ -30,146 +33,9 @@ def normalize_hero_unit(name):
     return f"CDOTA_Unit_Hero_{camel}"
 
 def extract_features(timeline, ref_time, hero_name, hero_unit):
-    start_time = ref_time - WINDOW_SECONDS
-    buckets = defaultdict(lambda: {
-        "player_pos": None,
-        "player_damage_taken": 0,
-        "player_died": False,
-        "player_level": 1,
-        "player_hp_pct": 0,
-        "teammates": {},
-        "enemies": {},
-    })
+    gatherer = DeathSurvivalDataGatherer(timeline, hero_name, hero_unit)
+    return gatherer.extract_features(ref_time)
 
-    hero_ids = set()
-    for e in timeline:
-        if e['type'] == "interval" and e['unit'].startswith("CDOTA_Unit_Hero_"):
-            hero_ids.add(e['unit'])
-
-    hero_ids = sorted(hero_ids)
-    enemy_ids = [hid for hid in hero_ids if hid != hero_unit][:5]
-    teammate_ids = [hid for hid in hero_ids if hid != hero_unit and hid not in enemy_ids][:4]
-
-    for e in timeline:
-        t = e["time"]
-        if t < start_time or t > ref_time:
-            continue
-        bucket = buckets[t]
-
-        if e['type'] == "interval":
-            if e['unit'] == hero_unit:
-                bucket["player_pos"] = (e['x'], e['y'])
-                bucket["player_level"] = e.get("level", 1)
-                hp = e.get("health", 0)
-                max_hp = e.get("maxHealth", None)
-                if isinstance(max_hp, (int, float)) and max_hp > 0:
-                    bucket["player_hp_pct"] = round(hp / max_hp, 3)
-                else:
-                    bucket["player_hp_pct"] = 0
-            elif e['unit'] in teammate_ids + enemy_ids:
-                group = "teammates" if e['unit'] in teammate_ids else "enemies"
-                hp = e.get("health", 0)
-                max_hp = e.get("maxHealth", None)
-                if isinstance(max_hp, (int, float)) and max_hp > 0:
-                    hp_pct = round(hp / max_hp, 3)
-                else:
-                    hp_pct = 0
-                bucket[group].setdefault(e['unit'], {})
-                bucket[group][e['unit']].update({
-                    "pos": (e['x'], e['y']),
-                    "level": e.get("level", 1),
-                    "hp_pct": hp_pct,
-                })
-
-        if e['type'] == "DOTA_COMBATLOG_DAMAGE":
-            target = normalize_hero_unit(e.get("targetname", ""))
-            if target == hero_unit:
-                bucket["player_damage_taken"] += e["value"]
-            elif target in teammate_ids:
-                bucket["teammates"].setdefault(target, {}).setdefault("damage_taken", 0)
-                bucket["teammates"][target]["damage_taken"] += e["value"]
-            elif target in enemy_ids:
-                bucket["enemies"].setdefault(target, {}).setdefault("damage_taken", 0)
-                bucket["enemies"][target]["damage_taken"] += e["value"]
-
-        if e['type'] == "DOTA_COMBATLOG_DEATH":
-            target = normalize_hero_unit(e.get("targetname", ""))
-            if target == hero_unit:
-                bucket["player_died"] = True
-            elif target in teammate_ids:
-                bucket["teammates"].setdefault(target, {})["died"] = True
-            elif target in enemy_ids:
-                bucket["enemies"].setdefault(target, {})["died"] = True
-
-    output = {}
-    for t, v in sorted(buckets.items()):
-        if not v["player_pos"]:
-            continue
-
-        teammates_pos = []
-        enemies_pos = []
-
-        for tid in teammate_ids:
-            data = v["teammates"].get(tid)
-            if data and "pos" in data and distance(v["player_pos"], data["pos"]) <= NEARBY_RADIUS:
-                teammates_pos.append(normalize(data["pos"], v["player_pos"]))
-
-        for eid in enemy_ids:
-            data = v["enemies"].get(eid)
-            if data and "pos" in data and distance(v["player_pos"], data["pos"]) <= NEARBY_RADIUS:
-                enemies_pos.append(normalize(data["pos"], v["player_pos"]))
-
-        teammates_data, enemies_data = [], []
-        for tid in teammate_ids:
-            data = v["teammates"].get(tid)
-            if data and "pos" in data and distance(v["player_pos"], data["pos"]) <= NEARBY_RADIUS:
-                teammates_data.append(data)
-
-        for eid in enemy_ids:
-            data = v["enemies"].get(eid)
-            if data and "pos" in data and distance(v["player_pos"], data["pos"]) <= NEARBY_RADIUS:
-                enemies_data.append(data)
-
-    
-
-        output[str(float(t))] = {
-                    "player_pos": [0.0, 0.0],
-                    "teammates_pos": [normalize(d["pos"], v["player_pos"]) for d in teammates_data],
-                    "enemies_pos": [normalize(d["pos"], v["player_pos"]) for d in enemies_data],
-                    "player_damage_taken": v["player_damage_taken"],
-                    "player_died": v["player_died"],
-                    "player_level": v["player_level"],
-                    "player_hp_pct": v["player_hp_pct"],
-                    "teammates_levels": [d.get("level", 1) for d in teammates_data],
-                    "enemies_levels": [d.get("level", 1) for d in enemies_data],
-                    "teammates_damage_taken": [d.get("damage_taken", 0) for d in teammates_data],
-                    "enemies_damage_taken": [d.get("damage_taken", 0) for d in enemies_data],
-                    "teammates_died": [d.get("died", False) for d in teammates_data],
-                    "enemies_died": [d.get("died", False) for d in enemies_data],
-                    "teammates_hp_pct": [d.get("hp_pct", 1.0) for d in teammates_data],
-                    "enemies_hp_pct": [d.get("hp_pct", 1.0) for d in enemies_data],
-                    "player_incapacitated": v.get("player_incapacitated", False)
-                }
-        #output[str(float(t))] = {
-        #    "player_pos": [0.0, 0.0],
-        #    "teammates_pos": teammates_pos,
-        #    "enemies_pos": enemies_pos,
-        #    "player_damage_taken": v["player_damage_taken"],
-        #    "player_died": v["player_died"],
-        #    "player_level": v["player_level"],
-        #    "player_hp_pct": v["player_hp_pct"],
-        #    "teammates_levels": [v["teammates"].get(tid, {}).get("level", 1) for tid in teammate_ids],
-        #    "enemies_levels": [v["enemies"].get(eid, {}).get("level", 1) for eid in enemy_ids],
-        #    "teammates_damage_taken": [v["teammates"].get(tid, {}).get("damage_taken", 0) for tid in teammate_ids],
-        #    "enemies_damage_taken": [v["enemies"].get(eid, {}).get("damage_taken", 0) for eid in enemy_ids],
-        #    "teammates_died": [v["teammates"].get(tid, {}).get("died", False) for tid in teammate_ids],
-        #    "enemies_died": [v["enemies"].get(eid, {}).get("died", False) for eid in enemy_ids],
-        #    "teammates_hp_pct": [v["teammates"].get(tid, {}).get("hp_pct", 1.0) for tid in teammate_ids],
-        #    "enemies_hp_pct": [v["enemies"].get(eid, {}).get("hp_pct", 1.0) for eid in enemy_ids]
-            #"player_incapacitated": False
-        #}
-
-    return output
 
 def detect_survivals(timeline, hero_name, hero_unit, window_seconds=10, damage_threshold=0.5, grace_period=5):
     survivals = []
