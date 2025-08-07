@@ -166,7 +166,7 @@ def train(time_limit, hero_filter):
     X_scaled = scaler.fit_transform(X_padded)
 
     print("🎯 Training model...")
-    model = get_model("rf")
+    model = get_model("xgb")
     #model = GradientBoostingClassifier(
     #n_estimators=200,
     #learning_rate=0.1,

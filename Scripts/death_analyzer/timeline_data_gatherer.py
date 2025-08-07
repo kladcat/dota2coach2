@@ -4,7 +4,7 @@ from collections import defaultdict
 from math import hypot
 
 NEARBY_RADIUS = 20
-WINDOW_SECONDS = 10
+WINDOW_SECONDS = 15
 
 class DeathSurvivalDataGatherer:
     def __init__(self, timeline, hero_name, hero_unit):
@@ -134,6 +134,54 @@ class DeathSurvivalDataGatherer:
         #print(f"🛠️ Built feature window with {len(output)} seconds for {self.hero_name} (event @ {event_time})")
 
         return output
+
+    def _detect_survivals(self,timeline, hero_name, hero_unit, window_seconds=10, damage_threshold=0.3, grace_period=5):
+        survivals = []
+        health_by_time = {}
+        damage_events = defaultdict(int)
+        death_times = set()
+
+        for e in timeline:
+            if e['type'] == "DOTA_COMBATLOG_DEATH" and self.normalize_name(e.get("targetname", "")) == hero_unit:
+                death_times.add(e["time"])
+
+        for e in timeline:
+            t = e["time"]
+            if e['type'] == "interval" and e['unit'] == hero_unit:
+                hp = e.get("health", 0)
+                max_hp = e.get("maxHealth", None)
+                if isinstance(max_hp, (int, float)) and max_hp > 0:
+                    health_by_time[t] = hp / max_hp
+            if e['type'] == "DOTA_COMBATLOG_DAMAGE" and self.normalize_name(e.get("targetname", "")) == hero_unit:
+                damage_events[t] += e["value"]
+
+        sorted_times = sorted(health_by_time.keys())
+        i = 0
+        while i < len(sorted_times) - 1:
+            t1 = sorted_times[i]
+            hp1 = health_by_time[t1]
+
+            for j in range(i + 1, len(sorted_times)):
+                t2 = sorted_times[j]
+
+                # ⏱️ Enforce max window duration
+                if t2 - t1 > window_seconds:
+                    break
+
+                hp2 = health_by_time[t2]
+
+                if hp1 - hp2 >= damage_threshold:
+                    # ❌ Skip if the player died during the window
+                    if any(dt in range(t1, t2 + grace_period + 1) for dt in death_times):
+                        break
+
+                    features = self.extract_features(t2)
+                    survivals.append((t2, features))
+                    i = j + grace_period
+                    break
+            i += 1
+
+        return survivals
 
     def _process_interval(self, e, bucket):
         unit = e['unit']
