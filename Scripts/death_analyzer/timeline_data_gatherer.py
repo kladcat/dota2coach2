@@ -14,11 +14,21 @@ class DeathSurvivalDataGatherer:
         self.teammate_ids = []
         self.enemy_ids = []
         self.unit_to_name = {}
-        self.lower_enemy_ids = []
-        self.lower_teammate_ids = []
+        self.normalized_teammate_ids = []
+        self.normalized_enemy_ids = []
+        self.normalized_hero_unit = ""
 
         self._identify_units()
 
+
+    @staticmethod
+    def normalize_name(name: str) -> str:
+        name = name.lower().replace("_", "")
+        if name.startswith("cdotaunit"):
+            name = name[len("cdotaunit"):]
+        elif name.startswith("npcdota"):
+            name = name[len("npcdota"):]
+        return name
 
     def _identify_units(self):
         hero_ids = []
@@ -31,15 +41,13 @@ class DeathSurvivalDataGatherer:
                     hero_ids.append(unit)
                     self.unit_to_name[unit] = e.get("name", unit.replace("CDOTA_Unit_", "npc_dota_"))
                 if len(hero_ids) == 10:
-                    break  # Only need the first 10
+                    break
 
-        # 🧠 Find which batch the player is in
         if self.hero_unit not in hero_ids:
             print(f"❗ hero_unit {self.hero_unit} not found in hero_ids:", hero_ids)
             return
 
         player_index = hero_ids.index(self.hero_unit)
-
         if player_index < 5:
             full_teammates = hero_ids[:5]
             self.enemy_ids = hero_ids[5:]
@@ -49,45 +57,12 @@ class DeathSurvivalDataGatherer:
 
         self.teammate_ids = [hid for hid in full_teammates if hid != self.hero_unit]
 
-        self.lower_enemy_ids = [hid.lower().replace("_", "") for hid in self.enemy_ids]
-        self.lower_teammate_ids = [hid.lower().replace("_", "") for hid in self.teammate_ids]
+        self.normalized_hero_unit = self.normalize_name(self.hero_unit)
+        self.normalized_enemy_ids = [self.normalize_name(hid) for hid in self.enemy_ids]
+        self.normalized_teammate_ids = [self.normalize_name(hid) for hid in self.teammate_ids]
 
-        #print("🧠 Player unit:", self.hero_unit)
-        #print("👥 All heroes:", hero_ids)
-        #print("💀 Enemy IDs:", self.lower_enemy_ids)
-        #print("🧑‍🤝‍🧑 Teammate IDs:", self.lower_teammate_ids)
-
-    @staticmethod
-    def detect_hero_name_from_events(timeline, unit_name):
-        for e in timeline:
-            if e.get("type") == "DOTA_ABILITY_LEVEL" and e.get("unit") == unit_name:
-                ability = e.get("ability", "")
-                print(f"🦠 Found ability '{ability}' for unit '{unit_name}'")
-                if ability.startswith("npc_dota_hero_"):
-                    result = ability.split("_ability")[0]
-                    print(f"✅ Mapping: {unit_name} → {result}")
-                    return result
-        fallback = unit_name.replace("CDOTA_Unit_", "npc_dota_").lower()
-        print(f"🧪 No ability found for {unit_name}, using fallback: {fallback}")
-        return fallback
-
-    def normalize_hero_unit(name: str) -> str:
-        """
-        Converts names like:
-        - npc_dota_hero_skeleton_king → cdota_unit_hero_skeleton_king
-        - CDOTA_Unit_Hero_SkeletonKing → cdota_unit_hero_skeleton_king
-        """
-        name = name.strip().lower()
-
-        if name.startswith("npc_dota_hero_"):
-            return "cdota_unit_hero_" + name[len("npc_dota_hero_"):]
-
-        if name.startswith("cdota_unit_hero_"):
-            return name  # Already normalized
-
-        # Fallback: if it's in the raw form like "SkeletonKing", lower it and add prefix
-        return "cdota_unit_hero_" + name
-
+        self.hero_name = self.normalize_name(self.hero_unit)
+        
     def extract_features(self, event_time, verbose=False):
 
         self.hero_name = self.hero_name.lower()
@@ -128,8 +103,9 @@ class DeathSurvivalDataGatherer:
 #                    start = active_incapacitations.pop(inflictor)
 #                    incapacitation_periods.append((start, t))
 
+            normalized_targetname = self.normalize_name(e.get("targetname", ""))
             # Track incapacitation purely via stun_duration
-            if e['type'] == "DOTA_COMBATLOG_MODIFIER_ADD" and e.get("targetname", "").lower().replace("_", "") in self.hero_name_variants:
+            if e['type'] == "DOTA_COMBATLOG_MODIFIER_ADD" and normalized_targetname in self.hero_name_variants:
                 stun_duration = e.get("stun_duration")
                 if isinstance(stun_duration, (int, float)) and stun_duration > 0:
                     start_time = t
@@ -161,53 +137,48 @@ class DeathSurvivalDataGatherer:
 
     def _process_interval(self, e, bucket):
         unit = e['unit']
-        
-        if unit == self.hero_unit:
-            max_hp = e.get("maxHealth")
-            hp = e.get("health", 0)
-            if isinstance(max_hp, (int, float)) and max_hp > 0:
-                hp_pct = round(hp / max_hp, 3)
-            else:
-                hp_pct = 0
+        normalized_unit = self.normalize_name(unit)
 
+        max_hp = e.get("maxHealth")
+        hp = e.get("health", 0)
+        hp_pct = round(hp / max_hp, 3) if isinstance(max_hp, (int, float)) and max_hp > 0 else 0
+
+        if normalized_unit == self.normalized_hero_unit:
             bucket["player_pos"] = (e['x'], e['y'])
             bucket["player_level"] = e.get("level")
             bucket["player_hp_pct"] = hp_pct
 
-        elif unit in self.teammate_ids + self.enemy_ids:
-            max_hp = e.get("maxHealth")
-            hp = e.get("health", 0)
-            if isinstance(max_hp, (int, float)) and max_hp > 0:
-                hp_pct = round(hp / max_hp, 3)
-            else:
-                hp_pct = 0
+        elif normalized_unit in self.normalized_teammate_ids:
+            bucket["teammates"].setdefault(normalized_unit, {})
+            bucket["teammates"][normalized_unit].update({
+                "pos": (e['x'], e['y']),
+                "level": e.get("level"),
+                "hp_pct": hp_pct
+            })
 
-            group = "teammates" if unit in self.teammate_ids else "enemies"
-            bucket[group].setdefault(unit, {})
-            bucket[group][unit].update({
+        elif normalized_unit in self.normalized_enemy_ids:
+            bucket["enemies"].setdefault(normalized_unit, {})
+            bucket["enemies"][normalized_unit].update({
                 "pos": (e['x'], e['y']),
                 "level": e.get("level"),
                 "hp_pct": hp_pct
             })
 
 
+
     def _process_damage(self, e, bucket, verbose):
-        tgt = e.get("targetname", "").lower().replace("_", "")
-        if tgt in self.hero_name_variants:
-            bucket["player_damage_taken"] += e['value']
-        
-        
-        norm_name = ("CDOTA_Unit_" + e['targetname'].replace("npc_dota_", "")).replace("_", "").lower()
-        
-        if "hero" in norm_name:
-            #print(norm_name)
-            #print("💀 Enemy IDs:", self.lower_enemy_ids)
-            #print("🧑‍🤝‍🧑 Teammate IDs:", self.lower_teammate_ids)
-            if norm_name in self.lower_teammate_ids + self.lower_enemy_ids:
-                print("enemy and teammate found: " + norm_name)
-                group = "teammates" if norm_name in self.teammate_ids else "enemies"
-                bucket[group].setdefault(norm_name, {}).setdefault("damage_taken", 0)
-                bucket[group][norm_name]["damage_taken"] += e['value']
+        target = e.get("targetname", "")
+        normalized_target = self.normalize_name(target)
+
+        if normalized_target == self.hero_name.replace("_", ""):
+            bucket["player_damage_taken"] += e["value"]
+
+        if "hero" in normalized_target:
+            if normalized_target in self.normalized_teammate_ids + self.normalized_enemy_ids:
+                group = "teammates" if normalized_target in self.normalized_teammate_ids else "enemies"
+                bucket[group].setdefault(normalized_target, {}).setdefault("damage_taken", 0)
+                bucket[group][normalized_target]["damage_taken"] += e["value"]
+
             if verbose and "creep" not in e.get("attackername", "") and "creep" not in e.get("targetname", ""):
                 bucket["damage_events"].append({
                     "attackername": e.get("attackername"),
@@ -218,52 +189,51 @@ class DeathSurvivalDataGatherer:
                 })
 
     def _process_death(self, e, bucket):
-        tgt = e.get("targetname", "").lower().replace("_", "")
-        if tgt in self.hero_name_variants:
+        target = e.get("targetname", "")
+        normalized_target = self.normalize_name(target)
+
+        if normalized_target == self.normalized_hero_unit:
             bucket["player_died"] = True
-        norm_name = "CDOTA_Unit_" + e['targetname'].replace("npc_dota_", "")
-        if norm_name in self.teammate_ids + self.enemy_ids:
-            group = "teammates" if norm_name in self.teammate_ids else "enemies"
-            bucket[group].setdefault(norm_name, {})["died"] = True
+        elif normalized_target in self.normalized_teammate_ids:
+            bucket["teammates"].setdefault(normalized_target, {})["died"] = True
+        elif normalized_target in self.normalized_enemy_ids:
+            bucket["enemies"].setdefault(normalized_target, {})["died"] = True
 
     def _construct_output(self, t, v, pos, incapacitated_ticks, verbose):
-        def gather_units(units):
-            pos_list, dmg_list, died_list, lvl_list, hp_list = [], [], [], [], []
-            for uid in units:
-                data = v.get("teammates" if uid in self.teammate_ids else "enemies", {}).get(uid)
-                if data and "pos" in data and self._distance(pos, data["pos"]) <= NEARBY_RADIUS:
-                    pos_list.append(self._normalize(data["pos"], pos))
-                    dmg_list.append(data.get("damage_taken", 0))
-                    died_list.append(data.get("died", False))
-                    lvl_list.append(data.get("level", 1))
-                    hp_list.append(data.get("hp_pct", 0))
-            return pos_list, dmg_list, died_list, lvl_list, hp_list
+            def gather_units(unit_dict, unit_list):
+                pos_list, dmg_list, died_list, lvl_list, hp_list = [], [], [], [], []
+                for uid in unit_list:
+                    data = unit_dict.get(uid)
+                    if data and "pos" in data and self._distance(pos, data["pos"]) <= NEARBY_RADIUS:
+                        pos_list.append(self._normalize(data["pos"], pos))
+                        dmg_list.append(data.get("damage_taken", 0))
+                        died_list.append(data.get("died", False))
+                        lvl_list.append(data.get("level", 1))
+                        hp_list.append(data.get("hp_pct", 0))
+                return pos_list, dmg_list, died_list, lvl_list, hp_list
 
-        t_pos, t_dmg, t_die, t_lvl, t_hp = gather_units(self.teammate_ids)
-        e_pos, e_dmg, e_die, e_lvl, e_hp = gather_units(self.enemy_ids)
+            t_pos, t_dmg, t_die, t_lvl, t_hp = gather_units(v["teammates"], self.normalized_teammate_ids)
+            e_pos, e_dmg, e_die, e_lvl, e_hp = gather_units(v["enemies"], self.normalized_enemy_ids)
 
-        #print(f"⏱️ t={t}: player_incapacitated={float(t) in incapacitated_ticks}")
-
-
-        return {
-            "player_pos": [0.0, 0.0],
-            "teammates_pos": t_pos,
-            "enemies_pos": e_pos,
-            "player_damage_taken": v["player_damage_taken"],
-            "teammates_damage_taken": t_dmg,
-            "enemies_damage_taken": e_dmg,
-            "player_died": v["player_died"],
-            "teammates_died": t_die,
-            "enemies_died": e_die,
-            "player_level": v.get("player_level", 1),
-            "teammates_levels": t_lvl,
-            "enemies_levels": e_lvl,
-            "player_hp_pct": v.get("player_hp_pct", 0),
-            "teammates_hp_pct": t_hp,
-            "enemies_hp_pct": e_hp,
-            "player_incapacitated": float(t) in incapacitated_ticks,
-            "damage_events": v["damage_events"] if verbose else []
-        }
+            return {
+                "player_pos": [0.0, 0.0],
+                "teammates_pos": t_pos,
+                "enemies_pos": e_pos,
+                "player_damage_taken": v["player_damage_taken"],
+                "teammates_damage_taken": t_dmg,
+                "enemies_damage_taken": e_dmg,
+                "player_died": v["player_died"],
+                "teammates_died": t_die,
+                "enemies_died": e_die,
+                "player_level": v.get("player_level", 1),
+                "teammates_levels": t_lvl,
+                "enemies_levels": e_lvl,
+                "player_hp_pct": v.get("player_hp_pct", 0),
+                "teammates_hp_pct": t_hp,
+                "enemies_hp_pct": e_hp,
+                "player_incapacitated": float(t) in incapacitated_ticks,
+                "damage_events": v["damage_events"] if verbose else []
+            }
 
     def _normalize(self, pos, origin):
         return [round(pos[0] - origin[0], 2), round(pos[1] - origin[1], 2)]

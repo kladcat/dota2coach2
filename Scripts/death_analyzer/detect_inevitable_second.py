@@ -49,7 +49,7 @@ def print_confidence_evolution(path, fake_rank=None):
 
     model = joblib.load(MODEL_PATH)
     scaler = joblib.load(SCALER_PATH)
-    expected_len = model.n_features_in_
+    expected_len = scaler.mean_.shape[0]
 
     time_keys = sorted(map(float, data.keys()))
     crossed = False
@@ -57,9 +57,9 @@ def print_confidence_evolution(path, fake_rank=None):
     print("📈 Confidence Evolution:\n")
     for t in time_keys:
         flat = flatten_timeseries_up_to(data, t, path, fake_rank)
+        if len(flat) < expected_len:
+            flat += [0] * (expected_len - len(flat))  # pad with zeros
         flat = np.array(flat).reshape(1, -1)
-        if flat.shape[1] < expected_len:
-            flat = np.pad(flat, ((0, 0), (0, expected_len - flat.shape[1])), mode='constant')
 
         flat_scaled = scaler.transform(flat)
         proba = model.predict_proba(flat_scaled)[0]
@@ -70,7 +70,9 @@ def print_confidence_evolution(path, fake_rank=None):
             crossed = True
             marker = "⬅️ **THRESHOLD CROSSED**"
 
-        print(f"t={t:>5}s → Death: {death_confidence*100:6.2f}% {marker}")
+        #print(f"t={t:>5}s → Death: {death_confidence*100:6.2f}% {marker}")
+        print(f"t={t:>5}s → Survival: {proba[0]*100:6.2f}% | Death: {proba[1]*100:6.2f}% {marker}")
+
 
 if __name__ == "__main__":
     if len(sys.argv) not in (2, 3):
