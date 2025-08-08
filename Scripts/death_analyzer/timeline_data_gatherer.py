@@ -135,7 +135,7 @@ class DeathSurvivalDataGatherer:
 
         return output
 
-    def _detect_survivals(self,timeline, hero_name, hero_unit, window_seconds=10, damage_threshold=0.3, grace_period=5):
+    def _detect_survivals(self,timeline, hero_name, hero_unit, window_seconds=10, damage_threshold=0.2, grace_period=5):
         survivals = []
         health_by_time = {}
         damage_events = defaultdict(int)

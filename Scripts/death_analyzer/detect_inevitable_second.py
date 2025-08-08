@@ -40,7 +40,7 @@ def flatten_timeseries_up_to(data, up_to_second, path, fallback_rank=None):
         ])
 
     rank = extract_rank_from_filename(os.path.basename(path), fallback_rank)
-    #flat.append(rank)
+    flat.append(rank)
     return flat
 
 def print_confidence_evolution(path, fake_rank=None):

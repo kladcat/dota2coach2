@@ -10,7 +10,7 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import EarlyStopping
 import re
 # === CONFIGURATION ===
-DATA_DIR = "../../OutputJsons/DeathsAndSurvivals"
+DATA_DIR = "../../OutputJsons/DeathsAndSurvivalsQANT"
 SEQUENCE_LENGTH = 21
 THRESHOLD = 0.5  # for binary prediction
 

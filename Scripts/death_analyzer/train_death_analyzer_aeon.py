@@ -107,7 +107,8 @@ def load_dataset(input_dir, time_filter, hero_filter):
                 continue
 
             features = flatten_timeseries(data)
-            flat = pad_to_full_length(features, full_length=352)
+            features.append(rank)
+            flat = pad_to_full_length(features, full_length=353)
 
 
             X.append(flat)  # use the padded version!
