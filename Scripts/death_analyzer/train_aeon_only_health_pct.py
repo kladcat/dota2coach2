@@ -16,7 +16,8 @@ from catboost import CatBoostClassifier
 import argparse
 from sklearn.preprocessing import MinMaxScaler
 
-INPUT_DIR = "../../OutputJsons/DeathsAndSurvives"
+#INPUT_DIR = "../../OutputJsons/DeathsAndSurvives"
+INPUT_DIR = "../../OutputJsons/8378467054_RT23"
 MODEL_DIR = "../../AeonModel"
 os.makedirs(MODEL_DIR, exist_ok=True)
 
@@ -32,12 +33,12 @@ def flatten_timeseries(data):
         #snapshot = data[t_key]
         snapshot = data[str(t)]
         flat.extend([
-            snapshot.get("player_hp_pct", 0),
-            *snapshot.get("enemies_hp_pct", []),
+            *snapshot.get("enemies_damage_taken", []),
             snapshot.get("player_damage_taken", 0),
             snapshot.get("player_level", 0),
-            *snapshot.get("enemies_levels", [])
-            #snapshot.get("player_damage_taken", 0),
+            *snapshot.get("enemies_levels", []),
+            snapshot.get("player_hp_pct", 0),
+            *snapshot.get("enemies_hp_pct", []),
         ])
     return flat
 
@@ -78,6 +79,7 @@ def load_dataset(input_dir, time_filter, hero_filter):
             if not fname.endswith(".json"):
                 continue
 
+
             event_time = extract_time_from_filename(fname)
             if event_time is None or event_time > time_filter:
                 continue
@@ -103,6 +105,10 @@ def load_dataset(input_dir, time_filter, hero_filter):
                 continue
 
             features = flatten_timeseries(data)
+
+            if "8378467054_RT23_death_chaos_knight_224" in fname:
+                print(f"Filename: {fname}")
+                print(f"Features after flattening: {features}")
             #features.append(rank)
             #flat = pad_to_full_length(features, full_length=353)
 
@@ -161,11 +167,17 @@ def train(time_limit, hero_filter):
     print("🔢 Scaling features...")
     scaler = StandardScaler()
     # Only scale the hp percentage
-    X_hp_scaled = scaler.fit_transform(np.array([x[0] for x in X]).reshape(-1, 1))  # Only scale the first feature (hp)
+    #X_hp_scaled = scaler.fit_transform(np.array([x[0] for x in X]).reshape(-1, 1))  # Only scale the first feature (hp)
     
     # Apply scaling only to the hp percentage feature
-    X_scaled = np.array([x[0] for x in X_hp_scaled]).reshape(-1, 1)  # Update this line to ensure only hp is passed for scaling
+    #X_scaled = np.array([x[0] for x in X_hp_scaled]).reshape(-1, 1)  # Update this line to ensure only hp is passed for scaling
 
+    X_padded = [x + [0] * (max_len - len(x)) for x in X]
+
+    print("🔢 Encoding and scaling...")
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X_padded)
+    print(f"X_scaled: {X_scaled}")
     #le = LabelEncoder()
     #y_encoded = le.fit_transform(y)
 
@@ -209,4 +221,4 @@ if __name__ == "__main__":
     model, scaler = train(time_limit=args.time, hero_filter=args.hero)
 
     test_hp_pct = 25  # Example health percentage to predict death confidence
-    predict_death_confidence(model, scaler, test_hp_pct)
+    #predict_death_confidence(model, scaler, test_hp_pct)
