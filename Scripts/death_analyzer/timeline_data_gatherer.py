@@ -20,6 +20,9 @@ class DeathSurvivalDataGatherer:
 
         self._identify_units()
 
+       # Detect buyback events
+        self.buyback_times = self._detect_buybacks()
+
 
     @staticmethod
     def normalize_name(name: str) -> str:
@@ -93,6 +96,10 @@ class DeathSurvivalDataGatherer:
                 continue
             bucket = raw_buckets[t]
 
+            if any(buyback_time in range(t, t + WINDOW_SECONDS + 1) for buyback_time in self.buyback_times):
+                #print(f"Buyback event found at time {t}. Skipping event completely. ")
+                continue
+
 #            if e['type'] == "DOTA_COMBATLOG_MODIFIER_ADD" and e.get("targetname", "").lower().replace("_", "") in self.hero_name_variants:
 #                if detect_incapacitated(e):
 #                    active_incapacitations[e.get("inflictor", "")] = t
@@ -135,15 +142,18 @@ class DeathSurvivalDataGatherer:
 
         return output
 
+    def _detect_buybacks(self):
+        buyback_times = []
+        for e in self.timeline:
+            if e["type"] == "CHAT_MESSAGE_BUYBACK":
+                buyback_times.append(e["time"])
+        return buyback_times
+
     def _detect_survivals(self,timeline, hero_name, hero_unit, window_seconds=10, damage_threshold=0.2, grace_period=5):
         survivals = []
         health_by_time = {}
         damage_events = defaultdict(int)
         death_times = set()
-
-        for e in timeline:
-            if e['type'] == "DOTA_COMBATLOG_DEATH" and self.normalize_name(e.get("targetname", "")) == hero_unit:
-                death_times.add(e["time"])
 
         for e in timeline:
             t = e["time"]
@@ -154,6 +164,8 @@ class DeathSurvivalDataGatherer:
                     health_by_time[t] = hp / max_hp
             if e['type'] == "DOTA_COMBATLOG_DAMAGE" and self.normalize_name(e.get("targetname", "")) == hero_unit:
                 damage_events[t] += e["value"]
+            if e['type'] == "DOTA_COMBATLOG_DEATH" and self.normalize_name(e.get("targetname", "")) == hero_unit:
+                death_times.add(e["time"])
 
         sorted_times = sorted(health_by_time.keys())
         i = 0

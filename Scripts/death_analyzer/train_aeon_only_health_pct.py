@@ -167,9 +167,9 @@ def load_dataset(input_dir, time_filter, hero_filter):
                 print(f"⚠️ Skipping file due to missing label: {full_path}")  # <-- ADD THIS
                 continue
 
-            if label == 1 and random.random() > 0.33:
+            #if label == 1 and random.random() > 0.33:
                 #print(f"⚠️ Skipping file due to many deaths and it needs balancing")  # <-- ADD THIS
-                continue
+            #    continue
 
             with open(full_path, 'r') as f:
                 data = json.load(f)

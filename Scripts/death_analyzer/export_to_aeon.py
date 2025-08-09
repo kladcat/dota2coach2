@@ -136,7 +136,7 @@ def main():
     else:
         process_file(path)
 
-    check_survival_files(true)
+    check_survival_files(True)
 
 if __name__ == "__main__":
     main()

@@ -119,11 +119,15 @@ def flatten_timeseries(data):
 
 def flatten_timeseries_up_to(data, up_to_second, path, fallback_rank=None):
     time_keys = sorted(map(float, data.keys()))
+    #print(f"Time Keys: {time_keys}")
+    #print(f"up_to_second: {up_to_second}")
+
     flat = []
     for t in time_keys:
         if t > up_to_second:
             break
         snapshot = data[str(t)]
+        #print(f"Extending flat with snapshot: {snapshot}")
         flat.extend([
             *snapshot.get("enemies_damage_taken", []),
             snapshot.get("player_damage_taken", 0),
@@ -185,6 +189,7 @@ def print_confidence_evolution(path, fake_rank=None):
     print("📈 Confidence Evolution:\n")
     for t in time_keys:
         flat = flatten_timeseries_up_to(data, t, path, fake_rank)
+        print(f"Length of flat features: {len(flat)}")
         if len(flat) < expected_len:
             flat += [0] * (expected_len - len(flat))  # pad with zeros
         flat = np.array(flat).reshape(1, -1)
