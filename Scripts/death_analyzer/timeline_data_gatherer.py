@@ -149,7 +149,7 @@ class DeathSurvivalDataGatherer:
             t = e["time"]
             if e['type'] == "interval" and e['unit'] == hero_unit:
                 hp = e.get("health", 0)
-                max_hp = e.get("maxHealth", None)
+                max_hp = e.get("maxHealth", e.get("max_health", None))
                 if isinstance(max_hp, (int, float)) and max_hp > 0:
                     health_by_time[t] = hp / max_hp
             if e['type'] == "DOTA_COMBATLOG_DAMAGE" and self.normalize_name(e.get("targetname", "")) == hero_unit:
@@ -187,7 +187,8 @@ class DeathSurvivalDataGatherer:
         unit = e['unit']
         normalized_unit = self.normalize_name(unit)
 
-        max_hp = e.get("maxHealth")
+        max_hp = e.get("maxHealth", e.get("max_health", None))
+
         hp = e.get("health", 0)
         hp_pct = round(hp / max_hp, 3) if isinstance(max_hp, (int, float)) and max_hp > 0 else 0
 
@@ -247,7 +248,7 @@ class DeathSurvivalDataGatherer:
         elif normalized_target in self.normalized_enemy_ids:
             bucket["enemies"].setdefault(normalized_target, {})["died"] = True
 
-    def _construct_output(self, t, v, pos, incapacitated_ticks, verbose):
+    def _construct_output_old(self, t, v, pos, incapacitated_ticks, verbose):
             def gather_units(unit_dict, unit_list):
                 pos_list, dmg_list, died_list, lvl_list, hp_list = [], [], [], [], []
                 for uid in unit_list:
@@ -282,6 +283,85 @@ class DeathSurvivalDataGatherer:
                 "player_incapacitated": float(t) in incapacitated_ticks,
                 "damage_events": v["damage_events"] if verbose else []
             }
+
+    def _construct_output(self, t, v, pos, incapacitated_ticks, verbose):
+        def gather_units(unit_dict, unit_list, expected_length, player_pos):
+            pos_list, dmg_list, died_list, lvl_list, hp_list = [], [], [], [], []
+            for uid in unit_list:
+                data = unit_dict.get(uid)
+                if data and "pos" in data:
+                    # Calculate the Euclidean distance between player and unit
+                    dist = self._calculate_distance(player_pos, data["pos"])
+                    if dist <= NEARBY_RADIUS:
+                        pos_list.append(dist)  # Store distance instead of (x, y) vector
+                        dmg_list.append(data.get("damage_taken", 0))
+                        died_list.append(data.get("died", False))
+                        lvl_list.append(data.get("level", 1))
+                        hp_list.append(data.get("hp_pct", 0))
+                    else:
+                        # If unit is too far, set -1 for the features
+                        pos_list.append(-1)  # Store distance as -1 if out of range
+                        dmg_list.append(-1)
+                        died_list.append(-1)
+                        lvl_list.append(-1)
+                        hp_list.append(-1)
+
+            # Pad the lists to ensure they all have the same length (expected_length)
+            while len(pos_list) < expected_length:
+                pos_list.append(-1)  # Pad with -1
+                dmg_list.append(-1)
+                died_list.append(-1)
+                lvl_list.append(-1)
+                hp_list.append(-1)
+
+            return pos_list, dmg_list, died_list, lvl_list, hp_list
+
+        # Assuming you know the expected length for teammates/enemies
+        expected_teammates_length = 5  # Example: if you expect 5 teammates
+        expected_enemies_length = 5     # Example: if you expect 5 enemies
+
+        t_pos, t_dmg, t_die, t_lvl, t_hp = gather_units(v["teammates"], self.normalized_teammate_ids, expected_teammates_length, pos)
+        e_pos, e_dmg, e_die, e_lvl, e_hp = gather_units(v["enemies"], self.normalized_enemy_ids, expected_enemies_length, pos)
+
+        # Constructing output with separate keys for each teammate/enemy
+        output = {}
+
+        # Player features
+        #output["player_pos"] = [0.0, 0.0]
+        output["player_damage_taken"] = v["player_damage_taken"]
+        output["player_died"] = v["player_died"]
+        output["player_level"] = v.get("player_level", 1)
+        output["player_hp_pct"] = v.get("player_hp_pct", 0)
+        output["player_incapacitated"] = float(t) in incapacitated_ticks
+
+        # Teammate features (teammates_pos1, teammates_pos2, ...)
+        for i in range(expected_teammates_length):
+            output[f"teammates_pos{i+1}"] = t_pos[i] if i < len(t_pos) else -1
+            output[f"teammates_damage_taken_{i+1}"] = t_dmg[i] if i < len(t_dmg) else -1
+            output[f"teammates_died_{i+1}"] = t_die[i] if i < len(t_die) else -1
+            output[f"teammates_level_{i+1}"] = t_lvl[i] if i < len(t_lvl) else -1
+            output[f"teammates_hp_pct_{i+1}"] = t_hp[i] if i < len(t_hp) else -1
+
+        # Enemy features (enemies_pos1, enemies_pos2, ...)
+        for i in range(expected_enemies_length):
+            output[f"enemies_pos{i+1}"] = e_pos[i] if i < len(e_pos) else -1
+            output[f"enemies_damage_taken_{i+1}"] = e_dmg[i] if i < len(e_dmg) else -1
+            output[f"enemies_died_{i+1}"] = e_die[i] if i < len(e_die) else -1
+            output[f"enemies_level_{i+1}"] = e_lvl[i] if i < len(e_lvl) else -1
+            output[f"enemies_hp_pct_{i+1}"] = e_hp[i] if i < len(e_hp) else -1
+
+        # Damage events
+        #output["damage_events"] = v["damage_events"] if verbose else []
+
+        return output
+
+    def _calculate_distance(self, p1, p2):
+        """
+        Calculate Euclidean distance between two points (p1, p2)
+        """
+        return round(hypot(p1[0] - p2[0], p1[1] - p2[1]), 2)
+
+
 
     def _normalize(self, pos, origin):
         return [round(pos[0] - origin[0], 2), round(pos[1] - origin[1], 2)]

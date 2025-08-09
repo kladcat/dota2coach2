@@ -7,6 +7,12 @@ def filter_events(input_path, output_path, interval_skip=0):
     interval_tracker = {}
 
     with open(input_path, 'r') as f:
+       
+        print(f"Processing file: {input_path}")
+        # Check if the file starts with ._ (this will check the filename part)
+        if input_path.split('/')[-1].startswith("._"):
+            print(f"Skipping file because it starts with ._ {input_path}")
+            return
         for line in f:
             if not line.strip():
                 continue
@@ -33,6 +39,7 @@ def filter_events(input_path, output_path, interval_skip=0):
 
                 if time % 10 == 0:
                     filtered_events.append(event)
+                    event["max_health"] = event.get("max_health")
                     interval_tracker[unit] = time
                 elif interval_skip == 0 or time % (interval_skip + 1) == 0:
                     minimal = {
@@ -42,7 +49,7 @@ def filter_events(input_path, output_path, interval_skip=0):
                         "x": event.get("x"),
                         "y": event.get("y"),
                         "health": event.get("health"),
-                        "maxHealth": event.get("maxHealth"),
+                        "maxHealth": event.get("max_health"),
                         "level": event.get("level"),
                         "stuns": event.get("stuns")
                     }

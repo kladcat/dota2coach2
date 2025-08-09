@@ -6,10 +6,15 @@ from timeline_minimizer import filter_events
 from timeline_to_timeseries_single_hero import extract_single_hero_timeseries
 
 # Base output folders
-BASE_RAW_JSONL_DIR = "../OutputJsons/FullTimelines/CKReplays"
-BASE_MINIMIZED_DIR = "../OutputJsons/MinimizedTimelines/CKReplays"
-BASE_TIMESERIES_DIR = "../OutputJsons/TimeSeriesForAverageTier/CKReplays"
-BASE_TIMESERIES_FOR_PREDICT_DIR = "../OutputJsons/TimeSeriesToPredictAverageTier"
+#BASE_RAW_JSONL_DIR = "../OutputJsons/FullTimelines/CKReplays"
+#BASE_MINIMIZED_DIR = "../OutputJsons/MinimizedTimelines/CKReplays"
+#BASE_TIMESERIES_DIR = "../OutputJsons/TimeSeriesForAverageTier/CKReplays"
+#BASE_TIMESERIES_FOR_PREDICT_DIR = "../OutputJsons/TimeSeriesToPredictAverageTier"
+
+BASE_RAW_JSONL_DIR = "/Volumes/XavisHD/Dota2/TempOutFolder/OutputJsons/FullTimelines/CKReplays"
+BASE_MINIMIZED_DIR = "/Volumes/XavisHD/Dota2/TempOutFolder/OutputJsons/MinimizedTimelines/CKReplays"
+BASE_TIMESERIES_DIR = "/Volumes/XavisHD/Dota2/TempOutFolder/OutputJsons/TimeSeriesForAverageTier/CKReplays"
+BASE_TIMESERIES_FOR_PREDICT_DIR = "/Volumes/XavisHD/Dota2/TempOutFolder/OutputJsons/TimeSeriesToPredictAverageTier"
 
 def ensure_dirs(*dirs):
     for d in dirs:

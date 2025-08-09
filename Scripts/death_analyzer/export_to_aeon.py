@@ -5,6 +5,7 @@ from collections import defaultdict
 from math import hypot
 
 from timeline_data_gatherer import DeathSurvivalDataGatherer  # add this import at the top
+from look_survival_outliers import check_survival_files  # add this import at the top
 
 
 WINDOW_SECONDS = 10
@@ -134,6 +135,8 @@ def main():
                 process_file(os.path.join(path, f))
     else:
         process_file(path)
+
+    check_survival_files(true)
 
 if __name__ == "__main__":
     main()

@@ -25,13 +25,84 @@ def flatten_timeseries(data):
 
     for t in time_keys:
         snapshot = data[str(t)]
+        #flat.extend([
+        #    *snapshot.get("enemies_damage_taken", []),
+        #    snapshot.get("player_damage_taken", 0),
+        #    snapshot.get("player_level", 0),
+        #    *snapshot.get("enemies_levels", []),
+        #    snapshot.get("player_hp_pct", 0),
+        #    *snapshot.get("enemies_hp_pct", []),
+        #])
+
         flat.extend([
-            *snapshot.get("enemies_damage_taken", []),
+            # Player Features
             snapshot.get("player_damage_taken", 0),
+            snapshot.get("player_died", 0),
             snapshot.get("player_level", 0),
-            *snapshot.get("enemies_levels", []),
             snapshot.get("player_hp_pct", 0),
-            *snapshot.get("enemies_hp_pct", []),
+            snapshot.get("player_incapacitated", 0),
+            
+            # Teammate Features (1 to 5)
+            snapshot.get("teammates_pos1", -1),
+            snapshot.get("teammates_damage_taken_1", -1),
+            snapshot.get("teammates_died_1", -1),
+            snapshot.get("teammates_level_1", -1),
+            snapshot.get("teammates_hp_pct_1", -1),
+            
+            snapshot.get("teammates_pos2", -1),
+            snapshot.get("teammates_damage_taken_2", -1),
+            snapshot.get("teammates_died_2", -1),
+            snapshot.get("teammates_level_2", -1),
+            snapshot.get("teammates_hp_pct_2", -1),
+            
+            snapshot.get("teammates_pos3", -1),
+            snapshot.get("teammates_damage_taken_3", -1),
+            snapshot.get("teammates_died_3", -1),
+            snapshot.get("teammates_level_3", -1),
+            snapshot.get("teammates_hp_pct_3", -1),
+            
+            snapshot.get("teammates_pos4", -1),
+            snapshot.get("teammates_damage_taken_4", -1),
+            snapshot.get("teammates_died_4", -1),
+            snapshot.get("teammates_level_4", -1),
+            snapshot.get("teammates_hp_pct_4", -1),
+            
+            snapshot.get("teammates_pos5", -1),
+            snapshot.get("teammates_damage_taken_5", -1),
+            snapshot.get("teammates_died_5", -1),
+            snapshot.get("teammates_level_5", -1),
+            snapshot.get("teammates_hp_pct_5", -1),
+            
+            # Enemy Features (1 to 5)
+            snapshot.get("enemies_pos1", -1),
+            snapshot.get("enemies_damage_taken_1", -1),
+            snapshot.get("enemies_died_1", -1),
+            snapshot.get("enemies_level_1", -1),
+            snapshot.get("enemies_hp_pct_1", -1),
+            
+            snapshot.get("enemies_pos2", -1),
+            snapshot.get("enemies_damage_taken_2", -1),
+            snapshot.get("enemies_died_2", -1),
+            snapshot.get("enemies_level_2", -1),
+            snapshot.get("enemies_hp_pct_2", -1),
+            
+            snapshot.get("enemies_pos3", -1),
+            snapshot.get("enemies_damage_taken_3", -1),
+            snapshot.get("enemies_died_3", -1),
+            snapshot.get("enemies_level_3", -1),
+            snapshot.get("enemies_hp_pct_3", -1),
+            
+            snapshot.get("enemies_pos4", -1),
+            snapshot.get("enemies_damage_taken_4", -1),
+            snapshot.get("enemies_died_4", -1),
+            snapshot.get("enemies_level_4", -1),
+            snapshot.get("enemies_hp_pct_4", -1),
+            
+            snapshot.get("enemies_pos5", -1),
+            snapshot.get("enemies_damage_taken_5", -1),
+            snapshot.get("enemies_died_5", -1),
+            snapshot.get("enemies_level_5", -1),
+            snapshot.get("enemies_hp_pct_5", -1),
         ])
 
                 # Print each feature's value alongside its name
